@@ -6,7 +6,7 @@ import javax.persistence.*
 @Table(name = "user_profiles")
 data class DUserProfile(
         @Id
-        @GeneratedValue(strategy = GenerationType.AUTO)
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
         val id: Int?,
         val username: String,
         val first_name: String,
