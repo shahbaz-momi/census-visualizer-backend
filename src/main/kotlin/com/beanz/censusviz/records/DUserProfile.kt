@@ -7,7 +7,7 @@ import javax.persistence.*
 data class DUserProfile(
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
-        val id: Int?,
+        val uid: Int?,
         val username: String,
         val first_name: String,
         val last_name: String,

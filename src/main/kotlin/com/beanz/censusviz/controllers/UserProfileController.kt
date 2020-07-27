@@ -33,7 +33,7 @@ class UserProfileController(
         val encoded = b64e.encode(hashed).toString(Charsets.UTF_8)
 
         val record = DUserProfile(
-                id = null,
+                uid = null,
                 username = registerRequest.username,
                 first_name = registerRequest.first_name,
                 last_name = registerRequest.last_name,
@@ -73,7 +73,7 @@ class UserProfileController(
         return """
             {
                 "token": "$newToken",
-                "first_name": "${record.first_name}"
+                "first_name": "${record.first_name}",
                 "last_name": "${record.last_name}"
             }
         """.trimIndent()
