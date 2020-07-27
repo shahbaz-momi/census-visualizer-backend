@@ -99,5 +99,6 @@ class UserQueryController(
     // TODO: share query - endpoint
 
     // TODO: friends endpoint - list friends
+
     // TODO: friends endpoint - add friend
 }
