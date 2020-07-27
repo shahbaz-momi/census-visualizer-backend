@@ -90,4 +90,19 @@ class UserQueryController(
                 .toPrettyString()
     }
 
+    // TODO: saved queries - endpoint
+
+    // TODO: friends relation - in db
+
+    // TODO: shared queries relation - qid, uid (secondary)
+
+    // TODO: friends query - uid, first_name, last_name
+
+    // TODO: person lookup query - name -> looksup in the first name, then last name, ranks by match
+
+    // TODO: friends endpoint - list friends
+    // TODO: friends endpoint - add friend
+
+    // TODO: share query - endpoint
+
 }

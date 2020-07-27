@@ -45,6 +45,7 @@ class UserProfileController(
         try {
             userRepo.save(record)
         } catch (e: Exception) {
+            e.printStackTrace()
             return "{ \"success\": false }"
         }
         return "{ \"success\": true }"
