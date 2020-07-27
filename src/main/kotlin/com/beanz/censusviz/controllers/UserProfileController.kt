@@ -8,15 +8,13 @@ import com.beanz.censusviz.repos.LoginTokenRepo
 import com.beanz.censusviz.repos.UserProfileRepo
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import java.security.MessageDigest
 import java.util.*
 
 @RestController
 @RequestMapping("/user")
+@CrossOrigin(origins = ["http://localhost:3000"])
 class UserProfileController(
         @Autowired
         private val userRepo: UserProfileRepo,
@@ -73,7 +71,9 @@ class UserProfileController(
         loginTokens.save(DLoginToken(newToken, record.username))
         return """
             {
-                "token": "$newToken"
+                "token": "$newToken",
+                "first_name": "${record.first_name}"
+                "last_name": "${record.last_name}"
             }
         """.trimIndent()
     }
