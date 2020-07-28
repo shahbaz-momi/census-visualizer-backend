@@ -9,4 +9,6 @@ interface FriendProfileRepo : CrudRepository<DFriend, Int> {
 
     fun findByFollowee(followee: Int): List<DFriend>
 
+    fun findByFollowerAndFollowee(follower: Int, followee: Int): DFriend?
+
 }
