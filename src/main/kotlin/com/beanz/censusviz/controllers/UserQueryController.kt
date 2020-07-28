@@ -3,6 +3,7 @@ package com.beanz.censusviz.controllers
 import com.beanz.censusviz.records.DDatasetCombinedRecord
 import com.beanz.censusviz.records.DQuery
 import com.beanz.censusviz.records.QueryDTO
+import com.beanz.censusviz.records.SavedQueryDTO
 import com.beanz.censusviz.repos.*
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
@@ -103,7 +104,7 @@ class UserQueryController(
 
     @PostMapping("/save_queries", consumes = [MediaType.APPLICATION_JSON_VALUE],
             produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun saveQueries(@RequestBody queries: List<QueryDTO>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+    fun saveQueries(@RequestBody queries: List<SavedQueryDTO>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
         // check token is valid
         val token = loginTokenRepo.findByToken(tokenString)
@@ -123,6 +124,7 @@ class UserQueryController(
         // create new queries for each entity
         savedQueriesRepo.saveAll(queries.map {
             DQuery(
+                    qid = it.qid,
                     uid = user.uid!!,
                     query = gson.toJson(it),
                     last_updated = Timestamp.from(Instant.now())
@@ -151,11 +153,14 @@ class UserQueryController(
 
         val dq = savedQueriesRepo.getAllByUid(user.uid!!)
         val queries = dq.map {
-            gson.fromJson(it.query, QueryDTO::class.java)
+            val dto = gson.fromJson(it.query, QueryDTO::class.java)
+            SavedQueryDTO(it.qid!!, dto.dataset, dto.params, dto.age, dto.sex)
         }
         return gson.toJson(queries)
     }
 
+
+    // TODO: update, delete query
 
     // TODO: find friends - endpoint
 
