@@ -40,6 +40,11 @@ class UserQueryController(
 
     private val gson = GsonBuilder().create()
 
+    private fun getUserFromToken(tokenString : String): DUserProfile? {
+        val token = loginTokenRepo.findByToken(tokenString) ?: return null
+        return userProfileRepo.findByUsername(token.username)
+    }
+
     private fun toGeoJson(records: List<DDatasetCombinedRecord>): JsonNode {
         val f = JsonNodeFactory.instance
 
@@ -108,15 +113,7 @@ class UserQueryController(
             produces = [MediaType.APPLICATION_JSON_VALUE])
     fun saveQueries(@RequestBody queries: List<SavedQueryDTO>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
-        // check token is valid
-        val token = loginTokenRepo.findByToken(tokenString)
-
-        if (token == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
-        val user = userProfileRepo.findByUsername(token.username)
+        val user = getUserFromToken(tokenString)
 
         if (user == null) {
             servletResponse.status = 400
@@ -138,15 +135,7 @@ class UserQueryController(
     @GetMapping("/saved_queries", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun savedQueries(@RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
-        // check token is valid
-        val token = loginTokenRepo.findByToken(tokenString)
-
-        if (token == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
-        val user = userProfileRepo.findByUsername(token.username)
+        val user = getUserFromToken(tokenString)
 
         if (user == null) {
             servletResponse.status = 400
@@ -165,15 +154,7 @@ class UserQueryController(
             produces = [MediaType.APPLICATION_JSON_VALUE])
     fun deleteQueries(@RequestBody qids: List<Int>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
-        // check token is valid
-        val token = loginTokenRepo.findByToken(tokenString)
-
-        if (token == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
-        val user = userProfileRepo.findByUsername(token.username)
+        val user = getUserFromToken(tokenString)
 
         if (user == null) {
             servletResponse.status = 400
@@ -196,21 +177,12 @@ class UserQueryController(
             produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getFriends(@RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
-        // check token is valid
-        val token = loginTokenRepo.findByToken(tokenString)
-
-        if (token == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
-        val user = userProfileRepo.findByUsername(token.username)
+        val user = getUserFromToken(tokenString)
 
         if (user == null) {
             servletResponse.status = 400
             return "{ \"success\": false }"
         }
-
         val uids = friendProfileRepo.findByFollowee(user.uid!!)
 
         val friendUsernames = mutableListOf<String>()
@@ -228,15 +200,7 @@ class UserQueryController(
             produces = [MediaType.APPLICATION_JSON_VALUE])
     fun addFriend(@RequestBody username: UsernameDTO, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
-        // check token is valid
-        val token = loginTokenRepo.findByToken(tokenString)
-
-        if (token == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
-        val user = userProfileRepo.findByUsername(token.username)
+        val user = getUserFromToken(tokenString)
 
         if (user == null) {
             servletResponse.status = 400
