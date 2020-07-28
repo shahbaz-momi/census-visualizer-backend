@@ -1,15 +1,13 @@
 package com.beanz.censusviz.controllers
 
-import com.beanz.censusviz.records.DDatasetCombinedRecord
-import com.beanz.censusviz.records.DQuery
-import com.beanz.censusviz.records.QueryDTO
-import com.beanz.censusviz.records.SavedQueryDTO
+import com.beanz.censusviz.records.*
 import com.beanz.censusviz.repos.*
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.google.gson.GsonBuilder
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
 import java.sql.Timestamp
@@ -181,6 +179,32 @@ class UserQueryController(
         savedQueriesRepo.deleteAllByUidAndQidIn(user.uid!!, qids)
         return "{ \"success\": true }"
     }
+
+    @GetMapping("/find_profiles", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun findProfiles(@RequestHeader("Authorization") @RequestParam(name = "input") input: String, auth: String, servletResponse: HttpServletResponse): String {
+        val tokenString = auth.substringAfter("Bearer ")
+        // check token is valid
+        val token = loginTokenRepo.findByToken(tokenString)
+
+        if (token == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        val user = userProfileRepo.findByUsername(token.username)
+
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        val profiles = userProfileRepo.findAllByUsernameContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrderByUsername(input, input, input, PageRequest.of(0, 25)).map {
+            UserProfileDTO(username = it.username, firstName = it.firstName, lastName = it.lastName)
+        }
+        return gson.toJson(profiles)
+    }
+
+
 
     // TODO: delete query
 
