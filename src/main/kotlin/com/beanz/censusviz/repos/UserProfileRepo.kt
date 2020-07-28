@@ -12,4 +12,5 @@ interface UserProfileRepo : CrudRepository<DUserProfile, Int> {
 
     fun findAllByUsernameContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrderByUsername(username: String, firstName: String, lastName: String, paging: Pageable): List<DUserProfile>
 
+    fun findByUid(uid: Int): DUserProfile?
 }
