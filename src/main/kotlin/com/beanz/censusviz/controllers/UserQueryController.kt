@@ -31,10 +31,19 @@ class UserQueryController(
         @Autowired
         private val incomesRepo: DatasetIncomesRepo,
         @Autowired
-        private val populationRepo: DatasetPopulationRepo
+        private val populationRepo: DatasetPopulationRepo,
+        @Autowired
+        private val userRepo : UserProfileRepo,
+        @Autowired
+        private val friendProfileRepo: FriendProfileRepo
 ) {
 
     private val gson = GsonBuilder().create()
+
+    private fun getUserFromToken(tokenString : String): DUserProfile? {
+        val token = loginTokenRepo.findByToken(tokenString) ?: return null
+        return userProfileRepo.findByUsername(token.username)
+    }
 
     private fun toGeoJson(records: List<DDatasetCombinedRecord>): JsonNode {
         val f = JsonNodeFactory.instance
@@ -64,7 +73,7 @@ class UserQueryController(
     }
 
     private fun processForQuery(query: QueryDTO): List<DDatasetCombinedRecord> {
-        return when(query.dataset) {
+        return when (query.dataset) {
             "education" -> {
                 educationRepo.findAllByAgeInAndSexAndMetaIn(query.age, query.sex, query.params)
             }
@@ -104,15 +113,7 @@ class UserQueryController(
             produces = [MediaType.APPLICATION_JSON_VALUE])
     fun saveQueries(@RequestBody queries: List<SavedQueryDTO>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
-        // check token is valid
-        val token = loginTokenRepo.findByToken(tokenString)
-
-        if (token == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
-        val user = userProfileRepo.findByUsername(token.username)
+        val user = getUserFromToken(tokenString)
 
         if (user == null) {
             servletResponse.status = 400
@@ -134,15 +135,7 @@ class UserQueryController(
     @GetMapping("/saved_queries", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun savedQueries(@RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
-        // check token is valid
-        val token = loginTokenRepo.findByToken(tokenString)
-
-        if (token == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
-        val user = userProfileRepo.findByUsername(token.username)
+        val user = getUserFromToken(tokenString)
 
         if (user == null) {
             servletResponse.status = 400
@@ -161,15 +154,7 @@ class UserQueryController(
             produces = [MediaType.APPLICATION_JSON_VALUE])
     fun deleteQueries(@RequestBody qids: List<Int>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
-        // check token is valid
-        val token = loginTokenRepo.findByToken(tokenString)
-
-        if (token == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
-        val user = userProfileRepo.findByUsername(token.username)
+        val user = getUserFromToken(tokenString)
 
         if (user == null) {
             servletResponse.status = 400
@@ -182,37 +167,71 @@ class UserQueryController(
 
     @GetMapping("/find_profiles", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun findProfiles(@RequestHeader("Authorization") @RequestParam(name = "input") input: String, auth: String, servletResponse: HttpServletResponse): String {
-        val tokenString = auth.substringAfter("Bearer ")
-        // check token is valid
-        val token = loginTokenRepo.findByToken(tokenString)
-
-        if (token == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
-        val user = userProfileRepo.findByUsername(token.username)
-
-        if (user == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
         val profiles = userProfileRepo.findAllByUsernameContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrderByUsername(input, input, input, PageRequest.of(0, 25)).map {
             UserProfileDTO(username = it.username, firstName = it.firstName, lastName = it.lastName)
         }
         return gson.toJson(profiles)
     }
 
+    @GetMapping("/friends", consumes = [MediaType.APPLICATION_JSON_VALUE],
+            produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getFriends(@RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+        val tokenString = auth.substringAfter("Bearer ")
+        val user = getUserFromToken(tokenString)
 
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+        val uids = friendProfileRepo.findByFollowee(user.uid!!)
 
-    // TODO: delete query
+        val friendUsernames = mutableListOf<String>()
+        for (uid in uids) {
+            val username = userProfileRepo.findByUid(uid.follower)?.username
+            if (username != null) {
+                friendUsernames.add(username)
+            }
+        }
 
-    // TODO: find friends - endpoint
+        return friendUsernames.toString()
+    }
 
-    // TODO: share query - endpoint
+    @PostMapping("/friends", consumes = [MediaType.APPLICATION_JSON_VALUE],
+            produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun addFriend(@RequestBody username: UsernameDTO, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+        val tokenString = auth.substringAfter("Bearer ")
+        val user = getUserFromToken(tokenString)
 
-    // TODO: friends query - uid, first_name, last_name
-    // TODO: friends endpoint - list friends
-    // TODO: friends endpoint - add friend
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        val friend = userProfileRepo.findByUsername(username.username)
+
+        if (friend == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        if (user.uid == null || friend.uid == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        val record = DFriend(follower = user.uid, followee = friend.uid)
+
+        // they are already friends
+        friendProfileRepo.findByFollowerAndFollowee(record.follower, record.followee) ?: return "{ \"success\": true }"
+
+        try {
+            friendProfileRepo.save(record)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+        return "{ \"success\": true }"
+    }
 }
+
