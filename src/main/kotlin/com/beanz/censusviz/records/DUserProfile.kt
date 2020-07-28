@@ -9,8 +9,8 @@ data class DUserProfile(
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         val uid: Int?,
         val username: String,
-        val first_name: String,
-        val last_name: String,
+        val firstName: String,
+        val lastName: String,
         val password_hash: String,
         val salt: String,
         val num_queries: Int

@@ -2,13 +2,17 @@ package com.beanz.censusviz.controllers
 
 import com.beanz.censusviz.records.DDatasetCombinedRecord
 import com.beanz.censusviz.records.DQuery
+import com.beanz.censusviz.records.QueryDTO
 import com.beanz.censusviz.repos.*
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
+import javax.servlet.http.HttpServletResponse
 
 @RestController
 @RequestMapping("/user")
@@ -16,6 +20,10 @@ import org.springframework.web.bind.annotation.*
 class UserQueryController(
         @Autowired
         private val loginTokenRepo: LoginTokenRepo,
+        @Autowired
+        private val userProfileRepo: UserProfileRepo,
+        @Autowired
+        private val savedQueriesRepo: SavedQueriesRepo,
         @Autowired
         private val educationRepo: DatasetEducationRepo,
         @Autowired
@@ -25,6 +33,8 @@ class UserQueryController(
         @Autowired
         private val populationRepo: DatasetPopulationRepo
 ) {
+
+    private val gson = GsonBuilder().create()
 
     private fun toGeoJson(records: List<DDatasetCombinedRecord>): JsonNode {
         val f = JsonNodeFactory.instance
@@ -53,7 +63,7 @@ class UserQueryController(
         return node
     }
 
-    private fun processForQuery(query: DQuery): List<DDatasetCombinedRecord> {
+    private fun processForQuery(query: QueryDTO): List<DDatasetCombinedRecord> {
         return when(query.dataset) {
             "education" -> {
                 educationRepo.findAllByAgeInAndSexAndMetaIn(query.age, query.sex, query.params)
@@ -75,11 +85,11 @@ class UserQueryController(
 
     @PostMapping("/query", consumes = [MediaType.APPLICATION_JSON_VALUE],
             produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun query(@RequestBody queries: List<DQuery>, @RequestHeader("Authorization") auth: String?): String {
-//        val tokenString = auth.substringAfter("Bearer ")
+    fun query(@RequestBody queries: List<QueryDTO>, @RequestHeader("Authorization") auth: String): String {
+        val tokenString = auth.substringAfter("Bearer ")
         // check token is valid
-//        loginTokenRepo.findByToken(tokenString)
-//                ?: return "{ \"success\": false }"
+        loginTokenRepo.findByToken(tokenString)
+                ?: return "{ \"success\": false }"
 
         val f = JsonNodeFactory.instance
 
@@ -90,15 +100,58 @@ class UserQueryController(
                 .toPrettyString()
     }
 
-    // TODO: friends relation - in db
-    // TODO: shared queries relation - qid, uid (secondary)
-    // TODO: friends query - uid, first_name, last_name
-    // TODO: person lookup query - name -> looksup in the first name, then last name, ranks by match
+    @PostMapping("/save_queries", consumes = [MediaType.APPLICATION_JSON_VALUE],
+            produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun saveQueries(@RequestBody queries: List<QueryDTO>, @RequestHeader("Authorization") auth: String): String {
+        val tokenString = auth.substringAfter("Bearer ")
+        // check token is valid
+        val token = loginTokenRepo.findByToken(tokenString)
+                ?: return "{ \"success\": false }"
 
-    // TODO: saved queries - endpoint
+        val user = userProfileRepo.findByUsername(token.username)
+                ?: return "{ \"success\": false }"
+
+        // create new queries for each entity
+        savedQueriesRepo.saveAll(queries.map {
+            DQuery(
+                    uid = user.uid!!,
+                    query = gson.toJson(it)
+            )
+        })
+        return "{ \"success\": true }"
+    }
+
+    @GetMapping("/saved_queries", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun savedQueries(@RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+        val tokenString = auth.substringAfter("Bearer ")
+        // check token is valid
+        val token = loginTokenRepo.findByToken(tokenString)
+
+        if (token == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        val user = userProfileRepo.findByUsername(token.username)
+
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        val dq = savedQueriesRepo.getAllByUid(user.uid!!)
+        val queries = dq.map {
+            gson.fromJson(it.query, QueryDTO::class.java)
+        }
+        return gson.toJson(queries)
+    }
+
+
+    // TODO: find friends - endpoint
+
     // TODO: share query - endpoint
 
+    // TODO: friends query - uid, first_name, last_name
     // TODO: friends endpoint - list friends
-
     // TODO: friends endpoint - add friend
 }
