@@ -7,7 +7,6 @@ import com.beanz.censusviz.repos.*
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
-import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
@@ -102,14 +101,22 @@ class UserQueryController(
 
     @PostMapping("/save_queries", consumes = [MediaType.APPLICATION_JSON_VALUE],
             produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun saveQueries(@RequestBody queries: List<QueryDTO>, @RequestHeader("Authorization") auth: String): String {
+    fun saveQueries(@RequestBody queries: List<QueryDTO>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
         // check token is valid
         val token = loginTokenRepo.findByToken(tokenString)
-                ?: return "{ \"success\": false }"
+
+        if (token == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
 
         val user = userProfileRepo.findByUsername(token.username)
-                ?: return "{ \"success\": false }"
+
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
 
         // create new queries for each entity
         savedQueriesRepo.saveAll(queries.map {
