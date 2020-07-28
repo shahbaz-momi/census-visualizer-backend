@@ -159,8 +159,30 @@ class UserQueryController(
         return gson.toJson(queries)
     }
 
+    @PostMapping("/delete_queries", consumes = [MediaType.APPLICATION_JSON_VALUE],
+            produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun deleteQueries(@RequestBody qids: List<Int>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+        val tokenString = auth.substringAfter("Bearer ")
+        // check token is valid
+        val token = loginTokenRepo.findByToken(tokenString)
 
-    // TODO: update, delete query
+        if (token == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        val user = userProfileRepo.findByUsername(token.username)
+
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        savedQueriesRepo.deleteAllByUidAndQidIn(user.uid!!, qids)
+        return "{ \"success\": true }"
+    }
+
+    // TODO: delete query
 
     // TODO: find friends - endpoint
 

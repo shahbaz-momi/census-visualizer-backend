@@ -9,4 +9,6 @@ interface SavedQueriesRepo: CrudRepository<DQuery, Int> {
 
     fun getAllByUid(uid: Int): List<DQuery>
 
+    fun deleteAllByUidAndQidIn(uid: Int, qid: List<Int>)
+
 }
