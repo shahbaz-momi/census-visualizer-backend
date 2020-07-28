@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
+import java.lang.Exception
 import java.sql.Timestamp
 import java.time.Instant
 import javax.servlet.http.HttpServletResponse
@@ -207,22 +208,15 @@ class UserQueryController(
             servletResponse.status = 400
             return "{ \"success\": false }"
         }
-        val uids = friendProfileRepo.findByFollowee(user.uid!!)
 
-        val friendUsernames = mutableListOf<String>()
-        for (uid in uids) {
-            val username = userProfileRepo.findByUid(uid.follower)?.username
-            if (username != null) {
-                friendUsernames.add(username)
-            }
-        }
-
-        return friendUsernames.toString()
+        return listOfNotNull(friendProfileRepo.findByFollowee(user.uid!!).map {
+            userProfileRepo.findByUid(it.follower)?.username
+        }).toString()
     }
 
     @PostMapping("/friends", consumes = [MediaType.APPLICATION_JSON_VALUE],
             produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun addFriend(@RequestBody username: UsernameDTO, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+    fun addFriend(@RequestBody usernames: List<String>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
         val user = getUserFromToken(tokenString)
 
@@ -231,31 +225,19 @@ class UserQueryController(
             return "{ \"success\": false }"
         }
 
-        val friend = userProfileRepo.findByUsername(username.username)
-
-        if (friend == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
+        usernames.forEach {
+            val friend = userProfileRepo.findByUsername(it)
+            if (friend?.uid != null && user.uid != null) {
+                val record = DFriend(user.uid, friend.uid)
+                try {
+                    friendProfileRepo.save(record)
+                } catch(e: Exception) {
+                    e.printStackTrace()
+                    servletResponse.status = 400
+                }
+            }
         }
-
-        if (user.uid == null || friend.uid == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-
-        val record = DFriend(follower = user.uid, followee = friend.uid)
-
-        // they are already friends
-        friendProfileRepo.findByFollowerAndFollowee(record.follower, record.followee) ?: return "{ \"success\": true }"
-
-        try {
-            friendProfileRepo.save(record)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            servletResponse.status = 400
-            return "{ \"success\": false }"
-        }
-        return "{ \"success\": true }"
+        return if (servletResponse.status == 400) "{ \"success\": false }" else "{ \"success\": true }"
     }
 }
 
