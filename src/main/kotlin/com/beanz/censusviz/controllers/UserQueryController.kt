@@ -11,6 +11,8 @@ import com.google.gson.GsonBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
+import java.sql.Timestamp
+import java.time.Instant
 import javax.servlet.http.HttpServletResponse
 
 @RestController
@@ -122,7 +124,8 @@ class UserQueryController(
         savedQueriesRepo.saveAll(queries.map {
             DQuery(
                     uid = user.uid!!,
-                    query = gson.toJson(it)
+                    query = gson.toJson(it),
+                    last_updated = Timestamp.from(Instant.now())
             )
         })
         return "{ \"success\": true }"

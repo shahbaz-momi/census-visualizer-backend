@@ -1,5 +1,6 @@
 package com.beanz.censusviz.records
 
+import java.sql.Timestamp
 import javax.persistence.*
 
 @Entity
@@ -9,6 +10,6 @@ data class DQuery(
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         val qid: Int? = null,
         val uid: Int,
-        val last_updated: Long? = null,
+        val last_updated: Timestamp,
         val query: String
 )
