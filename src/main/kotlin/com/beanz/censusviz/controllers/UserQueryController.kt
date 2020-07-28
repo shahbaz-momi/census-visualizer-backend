@@ -35,7 +35,9 @@ class UserQueryController(
         @Autowired
         private val userRepo : UserProfileRepo,
         @Autowired
-        private val friendProfileRepo: FriendProfileRepo
+        private val friendProfileRepo: FriendProfileRepo,
+        @Autowired
+        private val sharedQueriesRepo: SharedQueriesRepo
 ) {
 
     private val gson = GsonBuilder().create()
@@ -165,8 +167,30 @@ class UserQueryController(
         return "{ \"success\": true }"
     }
 
+    @PostMapping("/share_queries", consumes = [MediaType.APPLICATION_JSON_VALUE],
+            produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun shareQueries(@RequestBody shareRequests: List<QueryShareDTO>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+        val tokenString = auth.substringAfter("Bearer ")
+        val user = getUserFromToken(tokenString)
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+        shareRequests.map {
+            userProfileRepo.findByUsername(it.username)?.uid to it
+        }.filter {
+            it.first != null &&
+                    // user is friends with that mans
+                    friendProfileRepo.findByFollowerAndFollowee(user.uid!!, it.first!!) != null
+        }.forEach {
+            sharedQueriesRepo.save(DSharedQuery(it.second.qid, it.first!!))
+        }
+
+        return "{ \"success\": true }"
+    }
+
     @GetMapping("/find_profiles", produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun findProfiles(@RequestHeader("Authorization") @RequestParam(name = "input") input: String, auth: String, servletResponse: HttpServletResponse): String {
+    fun findProfiles(@RequestHeader("Authorization") auth: String, @RequestParam(name = "input") input: String, servletResponse: HttpServletResponse): String {
         val profiles = userProfileRepo.findAllByUsernameContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrderByUsername(input, input, input, PageRequest.of(0, 25)).map {
             UserProfileDTO(username = it.username, firstName = it.firstName, lastName = it.lastName)
         }
