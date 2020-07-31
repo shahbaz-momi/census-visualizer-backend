@@ -13,4 +13,5 @@ interface SavedQueriesRepo: CrudRepository<DQuery, Int> {
     @Transactional
     fun deleteAllByUidAndQidIn(uid: Int, qid: List<Int>)
 
+    fun existsByUidAndQid(uid: Int, qid: Int): Boolean
 }

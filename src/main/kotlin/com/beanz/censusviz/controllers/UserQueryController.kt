@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.google.gson.GsonBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
 import java.lang.Exception
@@ -119,6 +120,13 @@ class UserQueryController(
         val user = getUserFromToken(tokenString)
 
         if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        if(!queries.mapNotNull { it.qid }.all {
+            savedQueriesRepo.existsByUidAndQid(user.uid!!, it)
+        }) {
             servletResponse.status = 400
             return "{ \"success\": false }"
         }
