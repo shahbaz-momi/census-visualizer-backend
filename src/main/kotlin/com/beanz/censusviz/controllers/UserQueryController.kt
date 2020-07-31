@@ -113,7 +113,7 @@ class UserQueryController(
                 .toPrettyString()
     }
 
-    @PostMapping("/query", consumes = [MediaType.APPLICATION_JSON_VALUE],
+    @PostMapping("/query_by_id", consumes = [MediaType.APPLICATION_JSON_VALUE],
             produces = [MediaType.APPLICATION_JSON_VALUE])
     fun queryById(@RequestBody qids: List<Int>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
