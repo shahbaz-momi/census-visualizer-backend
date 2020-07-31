@@ -211,9 +211,9 @@ class UserQueryController(
             return "{ \"success\": false }"
         }
 
-        return listOfNotNull(friendProfileRepo.findByFollowee(user.uid!!).map {
+        return gson.toJson(friendProfileRepo.findByFollowee(user.uid!!).mapNotNull {
             userProfileRepo.findByUid(it.follower)?.username
-        }).toString()
+        })
     }
 
     @PostMapping("/friends", consumes = [MediaType.APPLICATION_JSON_VALUE],
