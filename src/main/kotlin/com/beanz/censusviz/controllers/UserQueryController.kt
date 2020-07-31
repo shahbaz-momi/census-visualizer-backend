@@ -124,15 +124,17 @@ class UserQueryController(
         }
 
         // create new queries for each entity
-        savedQueriesRepo.saveAll(queries.map {
+        val mapped = queries.map {
             DQuery(
                     qid = it.qid,
                     uid = user.uid!!,
                     query = gson.toJson(it),
                     last_updated = Timestamp.from(Instant.now())
             )
-        })
-        return "{ \"success\": true }"
+        }
+        savedQueriesRepo.saveAll(mapped)
+        // return array of query IDs
+        return gson.toJson(mapped.map { it.qid!! })
     }
 
     @GetMapping("/saved_queries", produces = [MediaType.APPLICATION_JSON_VALUE])
