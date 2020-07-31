@@ -113,6 +113,29 @@ class UserQueryController(
                 .toPrettyString()
     }
 
+    @PostMapping("/query", consumes = [MediaType.APPLICATION_JSON_VALUE],
+            produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun queryById(@RequestBody qids: List<Int>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+        val tokenString = auth.substringAfter("Bearer ")
+        val user = getUserFromToken(tokenString)
+
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        val queries = savedQueriesRepo.findAllByUidAndQidIn(user.uid!!, qids)
+
+        val f = JsonNodeFactory.instance
+
+        return queries
+                .map { gson.fromJson(it.query, QueryDTO::class.java) }
+                .map { processForQuery(it) }
+                .map { toGeoJson(it) }
+                .fold(f.arrayNode()!!) { acc: ArrayNode, jsonNode: JsonNode -> acc.add(jsonNode); acc }
+                .toPrettyString()
+    }
+
     @PostMapping("/save_queries", consumes = [MediaType.APPLICATION_JSON_VALUE],
             produces = [MediaType.APPLICATION_JSON_VALUE])
     fun saveQueries(@RequestBody queries: List<SavedQueryDTO>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {

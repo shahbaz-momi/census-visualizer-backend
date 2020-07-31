@@ -10,6 +10,8 @@ interface SavedQueriesRepo: CrudRepository<DQuery, Int> {
 
     fun getAllByUid(uid: Int): List<DQuery>
 
+    fun findAllByUidAndQidIn(uid: Int, qid: List<Int>): List<DQuery>
+
     @Transactional
     fun deleteAllByUidAndQidIn(uid: Int, qid: List<Int>)
 
