@@ -231,8 +231,7 @@ class UserQueryController(
         return gson.toJson(profiles)
     }
 
-    @GetMapping("/friends", consumes = [MediaType.APPLICATION_JSON_VALUE],
-            produces = [MediaType.APPLICATION_JSON_VALUE])
+    @GetMapping("/friends", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getFriends(@RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
         val user = getUserFromToken(tokenString)
