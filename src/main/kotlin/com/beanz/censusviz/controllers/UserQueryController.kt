@@ -248,7 +248,7 @@ class UserQueryController(
 
     @PostMapping("/friends", consumes = [MediaType.APPLICATION_JSON_VALUE],
             produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun addFriend(@RequestBody usernames: List<String>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+    fun addFriend(@RequestBody friendRequests: List<String>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
         val user = getUserFromToken(tokenString)
 
@@ -257,12 +257,11 @@ class UserQueryController(
             return "{ \"success\": false }"
         }
 
-        usernames.forEach {
+        friendRequests.forEach {
             val friend = userProfileRepo.findByUsername(it)
             if (friend?.uid != null && user.uid != null) {
-                val record = DFriend(user.uid, friend.uid)
                 try {
-                    friendProfileRepo.save(record)
+                    friendProfileRepo.save(DFriend(follower = user.uid, followee = friend.uid))
                 } catch(e: Exception) {
                     e.printStackTrace()
                     servletResponse.status = 400
