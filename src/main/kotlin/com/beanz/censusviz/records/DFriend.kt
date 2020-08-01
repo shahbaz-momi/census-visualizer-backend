@@ -17,7 +17,7 @@ data class DFriend(
 )
 
 data class DFriendId(
-        val follower: Int,
-        val followee: Int
+        val follower: Int = -1,
+        val followee: Int = -1
 ) : Serializable
 

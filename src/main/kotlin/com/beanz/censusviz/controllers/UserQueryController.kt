@@ -241,8 +241,8 @@ class UserQueryController(
             return "{ \"success\": false }"
         }
 
-        return gson.toJson(friendProfileRepo.findByFollowee(user.uid!!).mapNotNull {
-            userProfileRepo.findByUid(it.follower)?.username
+        return gson.toJson(friendProfileRepo.findByFollower(user.uid!!).mapNotNull {
+            userProfileRepo.findByUid(it.followee)?.username
         })
     }
 
