@@ -13,5 +13,6 @@ data class DUserProfile(
         val lastName: String,
         val password_hash: String,
         val salt: String,
-        val num_queries: Int
+        val num_queries: Int,
+        var dark_mode: Boolean
 )

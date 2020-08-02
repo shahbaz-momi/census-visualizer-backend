@@ -40,7 +40,8 @@ class UserProfileController(
                 lastName = registerRequest.last_name,
                 password_hash = encoded,
                 num_queries = 0,
-                salt = salt
+                salt = salt,
+                dark_mode = false
         )
 
         try {
