@@ -313,5 +313,32 @@ class UserQueryController(
         }
         return "{ \"success\": true }"
     }
+
+    @GetMapping("/friend_queries", consumes = [MediaType.APPLICATION_JSON_VALUE], produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getFriendQueries(@RequestParam(name = "username") username: String, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String{
+        val tokenString = auth.substringAfter("Bearer ")
+        var user = getUserFromToken(tokenString)!!
+
+        if (user == null || user.username == username) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        val friend = userProfileRepo.findByUsername(username)!!
+
+        // make sure user is friends
+        if(friendProfileRepo.findByFollowerAndFollowee(user.uid!!, friend.uid!!) == null){
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+
+        val dq = savedQueriesRepo.getAllByUid(friend.uid!!)
+        val queries = dq.map {
+            val dto = gson.fromJson(it.query, QueryDTO::class.java)
+            SavedQueryDTO(it.qid!!, dto.dataset, dto.params, dto.age, dto.sex)
+        }
+        return gson.toJson(queries)
+    }
 }
 
