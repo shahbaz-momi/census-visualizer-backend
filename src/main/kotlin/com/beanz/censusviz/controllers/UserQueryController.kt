@@ -242,7 +242,8 @@ class UserQueryController(
         }
 
         return gson.toJson(friendProfileRepo.findByFollower(user.uid!!).mapNotNull {
-            userProfileRepo.findByUid(it.followee)?.username
+            val usr = userProfileRepo.findByUid(it.followee)!!
+            UserProfileDTO(username = usr.username, firstName = usr.firstName, lastName = usr.lastName)
         })
     }
 
