@@ -41,7 +41,8 @@ class UserProfileController(
                 password_hash = encoded,
                 num_queries = 0,
                 salt = salt,
-                dark_mode = false
+                dark_mode = false,
+                icon = 0
         )
 
         try {

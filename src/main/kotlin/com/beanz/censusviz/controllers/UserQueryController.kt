@@ -381,7 +381,8 @@ class UserQueryController(
                 "last_name": "${user.lastName}",
                 "user_name": "${user.username}",
                 "num_queries": ${user.num_queries},
-                "dark_mode": ${user.dark_mode}
+                "dark_mode": ${user.dark_mode},
+                "icon": ${user.icon},
             }
         """.trimIndent()
         return gson.toJson(user)
@@ -398,6 +399,27 @@ class UserQueryController(
         }
 
         user.dark_mode = isDarkMode
+        try {
+            userProfileRepo.save(user)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+        return "{ \"success\": true }"
+    }
+
+    @PostMapping("/icon", consumes = [MediaType.APPLICATION_JSON_VALUE], produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun updateDarkMode(@RequestBody icon: Int, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String{
+        val tokenString = auth.substringAfter("Bearer ")
+        val user = getUserFromToken(tokenString)
+
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        user.icon = icon
         try {
             userProfileRepo.save(user)
         } catch (e: Exception) {
