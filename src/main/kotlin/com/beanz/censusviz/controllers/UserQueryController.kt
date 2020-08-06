@@ -199,8 +199,9 @@ class UserQueryController(
                 }.joinToString(separator = ", ", prefix = "[", postfix = "]")
     }
 
-    @GetMapping("/duplicate", produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun duplicateQuery(@RequestParam("qid") qid: Int, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+    @PostMapping("/duplicate", consumes = [MediaType.APPLICATION_JSON_VALUE],
+            produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun duplicateQuery(@RequestBody qids: List<Int>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
         val tokenString = auth.substringAfter("Bearer ")
         val user = getUserFromToken(tokenString)
 
@@ -209,15 +210,17 @@ class UserQueryController(
             return "{ \"success\": false }"
         }
 
-        val query = savedQueriesRepo.findById(qid).orElseGet { null }
+        qids.forEach { qid ->
+            val query = savedQueriesRepo.findById(qid).orElseGet { null }
 
-        if(query == null) {
-            servletResponse.status = 400
-            return "{ \"success\": false }"
+            if(query == null) {
+                servletResponse.status = 400
+                return "{ \"success\": false }"
+            }
+            // duplicate and save our query with new uid and no qid
+            savedQueriesRepo.save(query.copy(qid = null, uid = user.uid!!))
         }
 
-        // duplicate and save our query with new uid and no qid
-        savedQueriesRepo.save(query.copy(qid = null, uid = user.uid!!))
         return "{ \"success\": true }"
     }
 
