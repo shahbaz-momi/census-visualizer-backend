@@ -382,7 +382,7 @@ class UserQueryController(
                 "user_name": "${user.username}",
                 "num_queries": ${user.num_queries},
                 "dark_mode": ${user.dark_mode},
-                "icon": ${user.icon},
+                "icon": ${user.icon}
             }
         """.trimIndent()
         return gson.toJson(user)
