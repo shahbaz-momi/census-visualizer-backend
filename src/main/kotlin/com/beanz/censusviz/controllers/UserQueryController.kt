@@ -46,18 +46,25 @@ class UserQueryController(
         return userProfileRepo.findByUsername(token.username)
     }
 
-    private fun makeHeatmap(hue: Float, maxMag: Double): String {
+    private fun makeHeatmap(hue: Float, maxMag: Double, q: QueryDTO): String {
         val color = Color.getHSBColor(hue, 0.7f, 0.9f)
         val r = color.red
         val g = color.green
         val b = color.blue
+
+        val weight = if(q.curve != null) {
+            val c = q.curve
+            """["interpolate", ["cubic-bezier", ${c[0]}, ${c[1]}, ${c[2]}, ${c[3]}], ["get", "mag"], 0, 0, $maxMag, 1]"""
+        } else {
+            """["interpolate", ["linear"], ["get", "mag"], 0, 0, $maxMag, 1]"""
+        }
 
         return """
             {
               "maxzoom": 9,
               "type": "heatmap",
               "paint": {
-                "heatmap-weight": ["interpolate", ["linear"], ["get", "mag"], 0, 0, $maxMag, 1],
+                "heatmap-weight": $weight,
                 "heatmap-intensity": 2,
                 "heatmap-color": [
                   "interpolate",
@@ -183,17 +190,18 @@ class UserQueryController(
         return queries
                 .asSequence()
                 .map { gson.fromJson(it.query, QueryDTO::class.java) }
-                .map { processForQuery(it) to it.dataset }
+                .map { processForQuery(it) to it }
                 .map { toGeoJson(it.first) to (it.first.maxBy { it.count }!!.count to it.second) }
                 .mapIndexed { index, el ->
+                    val color = el.second.second.color ?: index.rem(colors.size)
                     """
                         {
                             "layer": ${el.first.toPrettyString()},
-                            "heatmap": ${makeHeatmap(colors[index.rem(colors.size)], el.second.first)},
+                            "heatmap": ${makeHeatmap(colors[color], el.second.first, el.second.second)},
                             "min": 0,
                             "max": ${el.second.first},
                             "hue": ${colors[index.rem(colors.size)]},
-                            "units": "${units(el.second.second)}"
+                            "units": "${units(el.second.second.dataset)}"
                         }
                     """.trimIndent()
                 }.joinToString(separator = ", ", prefix = "[", postfix = "]")
