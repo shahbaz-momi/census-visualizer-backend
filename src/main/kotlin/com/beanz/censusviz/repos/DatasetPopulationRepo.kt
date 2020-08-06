@@ -11,7 +11,7 @@ import javax.persistence.Table
 @Table(name = "education")
 interface DatasetPopulationRepo : CrudRepository<DDatasetRecord, Int> {
 
-    @Query("SELECT SUM(value) as count, lat, lon FROM education NATURAL JOIN geocode_lut WHERE age IN :ages AND sex = :sex GROUP BY geocode, lon, lat", nativeQuery = true)
+    @Query("SELECT SUM(value) as count, lat, lon FROM population NATURAL JOIN geocode_lut WHERE age IN :ages AND sex = :sex GROUP BY geocode, lon, lat", nativeQuery = true)
     fun findAllByAgeInAndSex(@Param("ages") ages: List<Int>, @Param("sex") sex: Int): List<DDatasetDoubleCombinedRecord>
 
 }

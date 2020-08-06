@@ -14,7 +14,6 @@ import java.awt.Color
 import java.sql.Timestamp
 import java.time.Instant
 import javax.servlet.http.HttpServletResponse
-import kotlin.random.Random
 
 @RestController
 @RequestMapping("/user")
@@ -34,8 +33,6 @@ class UserQueryController(
         private val incomesRepo: DatasetIncomesRepo,
         @Autowired
         private val populationRepo: DatasetPopulationRepo,
-        @Autowired
-        private val userRepo : UserProfileRepo,
         @Autowired
         private val friendProfileRepo: FriendProfileRepo,
         @Autowired
