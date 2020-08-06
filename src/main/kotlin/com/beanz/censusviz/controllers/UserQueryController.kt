@@ -184,6 +184,7 @@ class UserQueryController(
 
         val f = JsonNodeFactory.instance
         return queries
+                .asSequence()
                 .map { gson.fromJson(it.query, QueryDTO::class.java) }
                 .map { processForQuery(it) to it.dataset }
                 .map { toGeoJson(it.first) to (it.first.maxBy { it.count }!!.count to it.second) }
