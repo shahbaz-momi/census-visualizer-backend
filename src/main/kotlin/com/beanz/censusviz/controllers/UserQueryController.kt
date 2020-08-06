@@ -14,6 +14,7 @@ import java.awt.Color
 import java.sql.Timestamp
 import java.time.Instant
 import javax.servlet.http.HttpServletResponse
+import kotlin.random.Random
 
 @RestController
 @RequestMapping("/user")
@@ -48,11 +49,10 @@ class UserQueryController(
         return userProfileRepo.findByUsername(token.username)
     }
 
-    private fun makeHeatmap(hexColor: String, maxMag: Int): String {
-        val c = Color.decode(hexColor)
-        val r = c.red
-        val g = c.green
-        val b = c.blue
+    private fun makeHeatmap(color: Color, maxMag: Int): String {
+        val r = color.red
+        val g = color.green
+        val b = color.blue
 
         return """
             {
@@ -173,7 +173,7 @@ class UserQueryController(
                     """
                         {
                             "layer": ${arr.toPrettyString()},
-                            "heatmap": ${makeHeatmap("#4CAF50", 100000)},
+                            "heatmap": ${makeHeatmap(Color.getHSBColor(Random.nextFloat(), 0.7f, 0.8f), 100000)},
                             "min": 0,
                             "max": 100000
                         }
