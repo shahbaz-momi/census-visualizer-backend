@@ -134,6 +134,28 @@ class UserQueryController(
                 .toPrettyString()
     }
 
+    @GetMapping("/duplicate", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun duplicateQuery(@RequestParam("qid") qid: Int, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+        val tokenString = auth.substringAfter("Bearer ")
+        val user = getUserFromToken(tokenString)
+
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        val query = savedQueriesRepo.findById(qid).orElseGet { null }
+
+        if(query == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+
+        // duplicate and save our query with new uid and no qid
+        savedQueriesRepo.save(query.copy(qid = null, uid = user.uid!!))
+        return "{ \"success\": true }"
+    }
+
     @PostMapping("/save_queries", consumes = [MediaType.APPLICATION_JSON_VALUE],
             produces = [MediaType.APPLICATION_JSON_VALUE])
     fun saveQueries(@RequestBody queries: List<SavedQueryDTO>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
