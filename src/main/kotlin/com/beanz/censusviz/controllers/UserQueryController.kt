@@ -150,6 +150,17 @@ class UserQueryController(
                 .toPrettyString()
     }
 
+    private val colors = listOf( // in degrees
+            193.0f,
+            42.0f,
+            283.0f,
+            91.0f,
+            9.0f,
+            26.0f,
+            170.0f
+    ).map { it / 360.0f }
+
+
     @PostMapping("/query_by_id", consumes = [MediaType.APPLICATION_JSON_VALUE],
             produces = [MediaType.APPLICATION_JSON_VALUE])
     fun queryById(@RequestBody qids: List<Int>, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
@@ -164,16 +175,15 @@ class UserQueryController(
         val queries = savedQueriesRepo.findAllByUidAndQidIn(user.uid!!, qids)
 
         val f = JsonNodeFactory.instance
-
         return queries
                 .map { gson.fromJson(it.query, QueryDTO::class.java) }
                 .map { processForQuery(it) }
                 .map { toGeoJson(it) to it.maxBy { it.count }!!.count }
-                .map { el ->
+                .mapIndexed { index, el ->
                     """
                         {
                             "layer": ${el.first.toPrettyString()},
-                            "heatmap": ${makeHeatmap(Random.nextFloat(), el.second)},
+                            "heatmap": ${makeHeatmap(colors[index.rem(colors.size)], el.second)},
                             "min": 0,
                             "max": ${el.second}
                         }
