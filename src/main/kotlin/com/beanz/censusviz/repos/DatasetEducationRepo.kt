@@ -1,6 +1,5 @@
 package com.beanz.censusviz.repos
 
-import com.beanz.censusviz.records.DDatasetCombinedRecord
 import com.beanz.censusviz.records.DDatasetDoubleCombinedRecord
 import com.beanz.censusviz.records.DDatasetRecord
 import org.springframework.data.jpa.repository.Query
