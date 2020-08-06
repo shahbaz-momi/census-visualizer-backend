@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
+import java.awt.Color
 import java.sql.Timestamp
 import java.time.Instant
 import javax.servlet.http.HttpServletResponse
@@ -45,6 +46,43 @@ class UserQueryController(
     private fun getUserFromToken(tokenString : String): DUserProfile? {
         val token = loginTokenRepo.findByToken(tokenString) ?: return null
         return userProfileRepo.findByUsername(token.username)
+    }
+
+    private fun makeHeatmap(hexColor: String, maxMag: Int): String {
+        val c = Color.decode(hexColor)
+        val r = c.red
+        val g = c.green
+        val b = c.blue
+
+        return """
+            {
+              "maxzoom": 9,
+              "type": "heatmap",
+              "paint": {
+                "heatmap-weight": ["interpolate", ["linear"], ["get", "mag"], 0, 0, $maxMag, 1],
+                "heatmap-intensity": 2,
+                "heatmap-color": [
+                  "interpolate",
+                  ["linear"],
+                  ["heatmap-density"],
+                  0,
+                  "rgba($r,$g,$b,0)",
+                  0.2,
+                  "rgba($r,$g,$b,0.2)",
+                  0.4,
+                  "rgba($r,$g,$b,0.4)",
+                  0.6,
+                  "rgba($r,$g,$b,0.6)",
+                  0.8,
+                  "rgba($r,$g,$b,0.8)",
+                  0.9,
+                  "rgba($r,$g,$b,1)"
+                ],
+                "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 10, 5, 15, 6, 30, 8, 50, 9, 100],
+                "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 1, 9, 1, 10, 1, 11, 1]
+              }
+            }
+        """.trimIndent()
     }
 
     private fun toGeoJson(records: List<DDatasetCombinedRecord>): JsonNode {
@@ -131,7 +169,16 @@ class UserQueryController(
                 .map { processForQuery(it) }
                 .map { toGeoJson(it) }
                 .fold(f.arrayNode()!!) { acc: ArrayNode, jsonNode: JsonNode -> acc.add(jsonNode); acc }
-                .toPrettyString()
+                .let { arr ->
+                    """
+                        {
+                            "layer": ${arr.toPrettyString()},
+                            "heatmap": ${makeHeatmap("#4CAF50", 100000)},
+                            "min": 0,
+                            "max": 100000
+                        }
+                    """.trimIndent()
+                }
     }
 
     @GetMapping("/duplicate", produces = [MediaType.APPLICATION_JSON_VALUE])
