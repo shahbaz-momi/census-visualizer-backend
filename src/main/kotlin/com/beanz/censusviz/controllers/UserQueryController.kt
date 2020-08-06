@@ -8,10 +8,8 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.google.gson.GsonBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
-import java.lang.Exception
 import java.sql.Timestamp
 import java.time.Instant
 import javax.servlet.http.HttpServletResponse
@@ -223,9 +221,37 @@ class UserQueryController(
         return "{ \"success\": true }"
     }
 
+    @GetMapping("/shared_queries", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun sharedQueries(@RequestParam("username") fromUser: String?, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String {
+        val tokenString = auth.substringAfter("Bearer ")
+        val user = getUserFromToken(tokenString)
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+        return if(fromUser != null) {
+            gson.toJson(sharedQueriesRepo.getAllByUidByUsername(user.uid!!, fromUser).map {
+                gson.fromJson(it.query, QueryDTO::class.java)
+            })
+        } else {
+            gson.toJson(sharedQueriesRepo.getAllByUid(user.uid!!).map {
+                gson.fromJson(it.query, QueryDTO::class.java)
+            })
+        }
+    }
+
     @GetMapping("/find_profiles", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun findProfiles(@RequestHeader("Authorization") auth: String, @RequestParam(name = "input") input: String, servletResponse: HttpServletResponse): String {
-        val profiles = userProfileRepo.findAllByUsernameContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrderByUsername(input, input, input, PageRequest.of(0, 25)).map {
+        val tokenString = auth.substringAfter("Bearer ")
+        val user = getUserFromToken(tokenString)
+
+        if (user == null) {
+            servletResponse.status = 400
+            return "{ \"success\": false }"
+        }
+        val profiles = userProfileRepo.findAllByUsernameContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrderByUsername(input, input, input, PageRequest.of(0, 25)).filter {
+            it.uid != user.uid // filter out self from response
+        }.map {
             UserProfileDTO(username = it.username, firstName = it.firstName, lastName = it.lastName)
         }
         return gson.toJson(profiles)
@@ -260,7 +286,7 @@ class UserQueryController(
 
         friendRequests.forEach {
             val friend = userProfileRepo.findByUsername(it)
-            if (friend?.uid != null && user.uid != null) {
+            if (friend?.uid != null && user.uid != null && user.uid != friend.uid) { // disallow adding self
                 try {
                     friendProfileRepo.save(DFriend(follower = user.uid, followee = friend.uid))
                 } catch(e: Exception) {
@@ -296,7 +322,7 @@ class UserQueryController(
     @PostMapping("/dark_mode", consumes = [MediaType.APPLICATION_JSON_VALUE], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun updateDarkMode(@RequestBody isDarkMode: Boolean, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String{
         val tokenString = auth.substringAfter("Bearer ")
-        var user = getUserFromToken(tokenString)!!
+        val user = getUserFromToken(tokenString)
 
         if (user == null) {
             servletResponse.status = 400
@@ -317,7 +343,7 @@ class UserQueryController(
     @GetMapping("/friend_queries", consumes = [MediaType.APPLICATION_JSON_VALUE], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getFriendQueries(@RequestParam(name = "username") username: String, @RequestHeader("Authorization") auth: String, servletResponse: HttpServletResponse): String{
         val tokenString = auth.substringAfter("Bearer ")
-        var user = getUserFromToken(tokenString)!!
+        val user = getUserFromToken(tokenString)
 
         if (user == null || user.username == username) {
             servletResponse.status = 400
@@ -333,8 +359,7 @@ class UserQueryController(
         }
 
 
-        val dq = savedQueriesRepo.getAllByUid(friend.uid!!)
-        val queries = dq.map {
+        val queries = savedQueriesRepo.getAllByUid(friend.uid).map {
             val dto = gson.fromJson(it.query, QueryDTO::class.java)
             SavedQueryDTO(it.qid!!, dto.dataset, dto.params, dto.age, dto.sex)
         }
