@@ -5,3 +5,9 @@ interface DDatasetCombinedRecord {
     val lat: Double
     val lon: Double
 }
+
+interface DDatasetDoubleCombinedRecord {
+    val count: Double
+    val lat: Double
+    val lon: Double
+}

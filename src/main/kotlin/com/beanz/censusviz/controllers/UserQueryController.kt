@@ -167,7 +167,7 @@ class UserQueryController(
         return queries
                 .map { gson.fromJson(it.query, QueryDTO::class.java) }
                 .map { processForQuery(it) }
-                .map { toGeoJson(it) to it.maxBy { it.count }!!.count }
+                .map { toGeoJson(it) to 10000 }
                 .map { el ->
                     """
                         {
