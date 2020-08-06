@@ -49,7 +49,8 @@ class UserQueryController(
         return userProfileRepo.findByUsername(token.username)
     }
 
-    private fun makeHeatmap(color: Color, maxMag: Int): String {
+    private fun makeHeatmap(hue: Float, maxMag: Double): String {
+        val color = Color.getHSBColor(hue, 0.7f, 0.9f)
         val r = color.red
         val g = color.green
         val b = color.blue
@@ -85,10 +86,10 @@ class UserQueryController(
         """.trimIndent()
     }
 
-    private fun toGeoJson(records: List<DDatasetCombinedRecord>): JsonNode {
+    private fun toGeoJson(records: List<DDatasetDoubleCombinedRecord>): JsonNode {
         val f = JsonNodeFactory.instance
 
-        fun toGeoJson(record: DDatasetCombinedRecord): JsonNode {
+        fun toGeoJson(record: DDatasetDoubleCombinedRecord): JsonNode {
             val node = f.objectNode()
             node.put("type", "Feature")
             node.putObject("properties").apply {
@@ -112,7 +113,7 @@ class UserQueryController(
         return node
     }
 
-    private fun processForQuery(query: QueryDTO): List<DDatasetCombinedRecord> {
+    private fun processForQuery(query: QueryDTO): List<DDatasetDoubleCombinedRecord> {
         return when (query.dataset) {
             "education" -> {
                 educationRepo.findAllByAgeInAndSexAndMetaIn(query.age, query.sex, query.params)
@@ -167,12 +168,12 @@ class UserQueryController(
         return queries
                 .map { gson.fromJson(it.query, QueryDTO::class.java) }
                 .map { processForQuery(it) }
-                .map { toGeoJson(it) to 10000 }
+                .map { toGeoJson(it) to it.maxBy { it.count }!!.count }
                 .map { el ->
                     """
                         {
                             "layer": ${el.first.toPrettyString()},
-                            "heatmap": ${makeHeatmap(Color.getHSBColor(Random.nextFloat(), 0.7f, 0.8f), el.second)},
+                            "heatmap": ${makeHeatmap(Random.nextFloat(), el.second)},
                             "min": 0,
                             "max": ${el.second}
                         }
