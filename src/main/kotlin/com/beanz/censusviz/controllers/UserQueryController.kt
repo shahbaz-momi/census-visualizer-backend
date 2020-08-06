@@ -169,7 +169,7 @@ class UserQueryController(
                 .map { processForQuery(it) }
                 .map { toGeoJson(it) }
                 .fold(f.arrayNode()!!) { acc: ArrayNode, jsonNode: JsonNode -> acc.add(jsonNode); acc }
-                .let { arr ->
+                .map { arr ->
                     """
                         {
                             "layer": ${arr.toPrettyString()},
@@ -178,7 +178,7 @@ class UserQueryController(
                             "max": 100000
                         }
                     """.trimIndent()
-                }
+                }.joinToString(separator = ", ", prefix = "[", postfix = "]")
     }
 
     @GetMapping("/duplicate", produces = [MediaType.APPLICATION_JSON_VALUE])
