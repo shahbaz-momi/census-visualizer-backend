@@ -160,6 +160,14 @@ class UserQueryController(
             170.0f
     ).map { it / 360.0f }
 
+    private fun units(dataset: String): String {
+        return when(dataset) {
+            "education", "employment" -> "percent"
+            "population" -> "people"
+            "income" -> "dollars"
+            else -> "unknown"
+        }
+    }
 
     @PostMapping("/query_by_id", consumes = [MediaType.APPLICATION_JSON_VALUE],
             produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -177,15 +185,17 @@ class UserQueryController(
         val f = JsonNodeFactory.instance
         return queries
                 .map { gson.fromJson(it.query, QueryDTO::class.java) }
-                .map { processForQuery(it) }
-                .map { toGeoJson(it) to it.maxBy { it.count }!!.count }
+                .map { processForQuery(it) to it.dataset }
+                .map { toGeoJson(it.first) to (it.first.maxBy { it.count }!!.count to it.second) }
                 .mapIndexed { index, el ->
                     """
                         {
                             "layer": ${el.first.toPrettyString()},
-                            "heatmap": ${makeHeatmap(colors[index.rem(colors.size)], el.second)},
+                            "heatmap": ${makeHeatmap(colors[index.rem(colors.size)], el.second.first)},
                             "min": 0,
-                            "max": ${el.second}
+                            "max": ${el.second.first},
+                            "hue": ${colors[index.rem(colors.size)]},
+                            "units": "${units(el.second.second)}"
                         }
                     """.trimIndent()
                 }.joinToString(separator = ", ", prefix = "[", postfix = "]")
