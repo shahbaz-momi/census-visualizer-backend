@@ -282,9 +282,9 @@ class UserQueryController(
         }.filter {
             it.first != null &&
                     // user is friends with that mans
-                    friendProfileRepo.findByFollowerAndFollowee(user.uid!!, it.first!!) != null
+                    friendProfileRepo.findByFollowerAndFollowee(it.first!!, user.uid!!) != null
         }.forEach {
-            sharedQueriesRepo.save(DSharedQuery(it.second.qid, it.first!!))
+            sharedQueriesRepo.save(DSharedQuery(it.first!!, it.second.qid))
         }
 
         return "{ \"success\": true }"
