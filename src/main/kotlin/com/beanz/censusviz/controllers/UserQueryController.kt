@@ -167,15 +167,14 @@ class UserQueryController(
         return queries
                 .map { gson.fromJson(it.query, QueryDTO::class.java) }
                 .map { processForQuery(it) }
-                .map { toGeoJson(it) }
-                .fold(f.arrayNode()!!) { acc: ArrayNode, jsonNode: JsonNode -> acc.add(jsonNode); acc }
-                .map { arr ->
+                .map { toGeoJson(it) to it.maxBy { it.count }!!.count }
+                .map { el ->
                     """
                         {
-                            "layer": ${arr.toPrettyString()},
-                            "heatmap": ${makeHeatmap(Color.getHSBColor(Random.nextFloat(), 0.7f, 0.8f), 100000)},
+                            "layer": ${el.first.toPrettyString()},
+                            "heatmap": ${makeHeatmap(Color.getHSBColor(Random.nextFloat(), 0.7f, 0.8f), el.second)},
                             "min": 0,
-                            "max": 100000
+                            "max": ${el.second}
                         }
                     """.trimIndent()
                 }.joinToString(separator = ", ", prefix = "[", postfix = "]")
