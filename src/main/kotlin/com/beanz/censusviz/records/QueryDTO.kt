@@ -6,5 +6,5 @@ data class QueryDTO(
         val age: List<Int>,
         val sex: Int,
         val color: Int? = null,
-        val curve: List<Int>? = null
+        val curve: List<Double>? = null
 )
