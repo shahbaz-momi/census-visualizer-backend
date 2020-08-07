@@ -194,13 +194,14 @@ class UserQueryController(
                 .map { toGeoJson(it.first) to (it.first.maxBy { it.count }!!.count to it.second) }
                 .mapIndexed { index, el ->
                     val color = el.second.second.color ?: index.rem(colors.size)
+                    val rgb = Color.getHSBColor(colors[color], 0.7f, 0.9f)
                     """
                         {
                             "layer": ${el.first.toPrettyString()},
                             "heatmap": ${makeHeatmap(colors[color], el.second.first, el.second.second)},
                             "min": 0,
                             "max": ${el.second.first},
-                            "hue": ${colors[index.rem(colors.size)]},
+                            "hue": "rgb(${rgb.red}, ${rgb.green}, ${rgb.blue})",
                             "units": "${units(el.second.second.dataset)}"
                         }
                     """.trimIndent()
