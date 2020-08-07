@@ -191,7 +191,7 @@ class UserQueryController(
                 .asSequence()
                 .map { gson.fromJson(it.query, QueryDTO::class.java) }
                 .map { processForQuery(it) to it }
-                .map { toGeoJson(it.first) to (it.first.maxBy { it.count }?.count ?: 0 to it.second) }
+                .map { toGeoJson(it.first) to ((it.first.maxBy { it.count }?.count ?: 0.0) to it.second) }
                 .mapIndexed { index, el ->
                     val color = el.second.second.color ?: index.rem(colors.size)
                     val rgb = Color.getHSBColor(colors[color], 0.7f, 0.9f)
