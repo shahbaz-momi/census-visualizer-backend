@@ -5,5 +5,7 @@ data class SavedQueryDTO(
         val dataset: String,
         val params: List<Int>,
         val age: List<Int>,
-        val sex: Int
+        val sex: Int,
+        val color: Int? = null,
+        val curves: List<Int>? = null
 )

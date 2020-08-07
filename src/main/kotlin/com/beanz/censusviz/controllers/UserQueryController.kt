@@ -277,7 +277,7 @@ class UserQueryController(
         val dq = savedQueriesRepo.getAllByUid(user.uid!!)
         val queries = dq.map {
             val dto = gson.fromJson(it.query, QueryDTO::class.java)
-            SavedQueryDTO(it.qid!!, dto.dataset, dto.params, dto.age, dto.sex)
+            SavedQueryDTO(it.qid!!, dto.dataset, dto.params, dto.age, dto.sex, dto.color, dto.curve)
         }
         return gson.toJson(queries)
     }
